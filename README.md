@@ -28,7 +28,7 @@ __EOF__
 vagrant up 
 ```
 
-- In this example below is the VM configuration. copy this on each host in /etc/hosts file.
+- In this example below is the VM configuration. copy this on each vm in /etc/hosts file.
 ```
 10.0.0.51    master01
 10.0.0.52    master02
