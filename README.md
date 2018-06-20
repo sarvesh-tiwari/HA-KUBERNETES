@@ -22,8 +22,6 @@ Vagrant.configure("2") do |config|
     SHELL
 end
 __EOF__
-
 ```
-
 - Go to each directory and start the VM using below command 
 	vagrant up 
