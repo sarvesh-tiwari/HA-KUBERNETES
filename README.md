@@ -1,7 +1,7 @@
 ### Create VM for 3 master, 3 Worker, 1 loadbalancer
 
 - Install Virtual box , Vagrant in local machine.
-- create directories for 3 master, 3 Worker, 1 loadbalancer VM 
+- create directories for 3 master, 4 Worker, 1 loadbalancer VM 
 - Place below VagrantFile in all the directories  with different static private ip and VM name 
 
 ```
