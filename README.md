@@ -1,4 +1,4 @@
-### Create VM's for 3 master, 4 Worker, 1 loadbalancer
+### Create VM's for 3 master, 4 Worker, 1 loadbalancer :
 
 - Install Virtual box , Vagrant in local machine.
 - create directories for 3 master, 4 Worker, 1 loadbalancer VM 
@@ -41,4 +41,47 @@ vagrant up
 ```
 
 #### Note:
--Login as root user to all your machines and not switch unless it is required in the document
+- Login as root user to all your machines and not switch unless it is required in the document
+
+### Install pre-requisites softwares :
+
+- Install docker on all the machine (master, worker, load balancer)
+```
+apt-get update
+apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+add-apt-repository "deb https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") $(lsb_release -cs) stable"
+apt-get update && apt-get install -y docker-ce=$(apt-cache madison docker-ce | grep 17.03 | head -1 | awk '{print $3}')
+```
+
+- Installing kubeadm, kubelet and kubectl on all the machine (master, worker, load balancer)
+```
+apt-get update && apt-get install -y apt-transport-https curl
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
+deb http://apt.kubernetes.io/ kubernetes-xenial main
+EOF
+apt-get update
+apt-get install -y kubelet kubeadm kubectl
+```
+- Export environment variable on all master nodes 
+```
+export PEER_NAME=$(hostname)
+export PRIVATE_IP=$(ip addr show enp0s8 | grep -Po 'inet \K[\d.]+')
+```
+- Install etcd only on master vm's
+```
+touch /etc/etcd.env
+echo "PEER_NAME=${PEER_NAME}" >> /etc/etcd.env
+echo "PRIVATE_IP=${PRIVATE_IP}" >> /etc/etcd.env
+mkdir -p /var/lib/etcd
+ETCD_VERSION="v3.1.12"
+curl -sSL https://github.com/coreos/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz | tar -xzv --strip-components=1 -C /usr/local/bin/
+```
+- Install cfssl and cfssljson on all master vm's:
+```
+curl -o /usr/local/bin/cfssl https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
+curl -o /usr/local/bin/cfssljson https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
+chmod +x /usr/local/bin/cfssl*
+```
+### Generate Certificates :
