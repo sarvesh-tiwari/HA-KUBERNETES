@@ -39,3 +39,5 @@ vagrant up
 10.0.0.57    worker04
 10.0.0.58    lb01
 ```
+
+#####Note:##### Login as root user to all your machines and not switch unless it is required in the document
