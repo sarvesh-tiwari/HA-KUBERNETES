@@ -347,7 +347,9 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ### Now run kubeadm on other master VM's one by one:
 
 -SSH to other master VM change directory to the root user home
-```cd ~```
+```
+cd ~
+```
 - SCP Cert's and config.yaml from master 1 vm
 ```
 scp root@10.0.0.51:/root/config.yaml .
@@ -355,10 +357,13 @@ scp root@10.0.0.51:/etc/kubernetes/pki/* /etc/kubernetes/pki
 rm /etc/kubernetes/pki/apiserver*
 ```
 - Now run kubeadm
-``` kubeadm init --config config.yaml ```
+``` 
+kubeadm init --config config.yaml 
+```
 - Repeat ( as mentioned above on) creating kubeadmin user and copy admin config to kubeadmin user home directory other master nodes 	
 - Check all master nodes running kubeadm or not
-```kubectl get nodes
+```
+kubectl get nodes
 
 NAME             STATUS     ROLES     AGE       VERSION
 master01         Ready      master    41m       v1.10.4
@@ -395,6 +400,10 @@ kubectl -n kube-system get service kubernetes-dashboard
 kubectl get pods --all-namespaces -owide
 ```
 - Access the dashboard on browser by using below URL 
-```https://<worker-vm-ip>:<nodePort>```
+```
+https://<worker-vm-ip>:<nodePort>
+In my case
+https://10.0.0.58:32157 
+```
 
 
