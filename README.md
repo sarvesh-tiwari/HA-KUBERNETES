@@ -221,3 +221,180 @@ etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.pem --cert-file /etc/kubernetes/pk
 	member 7ee96495530e23e0 is healthy: got healthy result from https://10.0.0.51:2379
 	cluster is healthy
 ```  
+### Now Setup your nginx load balancer on load balancer VM
+- install nginx on lb vm
+```
+apt-get install nginx nginx-extras
+cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
+```
+- Create nginx config file as service
+```
+cat <<__EOF__>/etc/nginx/nginx.conf
+worker_processes  1;
+include /etc/nginx/modules-enabled/*.conf;
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    keepalive_timeout  65;
+
+    #gzip  on;
+
+    include /etc/nginx/conf.d/*.conf;
+}
+stream {
+        upstream apiserver {
+            server 10.0.0.51:6443 weight=5 max_fails=3 fail_timeout=30s;
+            server 10.0.0.52:6443 weight=5 max_fails=3 fail_timeout=30s;
+            server 10.0.0.53:6443 weight=5 max_fails=3 fail_timeout=30s;
+            #server ${HOST_IP}:6443 weight=5 max_fails=3 fail_timeout=30s;
+            #server ${HOST_IP}:6443 weight=5 max_fails=3 fail_timeout=30s;
+        }
+
+    server {
+        listen 6443;
+        proxy_connect_timeout 1s;
+        proxy_timeout 3s;
+        proxy_pass apiserver;
+    }
+}
+__EOF__
+```
+- Start nginx service
+```
+systemctl restart nginx
+systemctl status nginx
+```
+
+### Run kubeadm init on master1 VM first :
+
+- change directory to root user home
+```cd ~```
+- Create config yaml as below
+```
+cat <<__EOF__>config.yaml
+  apiVersion: kubeadm.k8s.io/v1alpha1
+  kind: MasterConfiguration
+  api:
+    advertiseAddress: 10.0.0.58
+    controlPlaneEndpoint: 10.0.0.58
+  etcd:
+    endpoints:
+    - https://10.0.0.51:2379
+    - https://10.0.0.52:2379
+    - https://10.0.0.53:2379
+    caFile: /etc/kubernetes/pki/etcd/ca.pem
+    certFile: /etc/kubernetes/pki/etcd/client.pem
+    keyFile: /etc/kubernetes/pki/etcd/client-key.pem
+  networking:
+    podSubnet: 10.244.0.0/16
+  apiServerCertSANs:
+  - master01
+  - master02
+  - master03
+  - lb01.home
+  - lb01
+  - 10.0.0.51
+  - 10.0.0.52
+  - 10.0.0.53
+  - 10.0.0.58
+  apiServerExtraArgs:
+    apiserver-count: "3"
+__EOF__
+```
+#### Note:
+where 10.0.0.58 is loadbalancer IP, 10.0.0.51,10.0.0.52,10.0.0.53 etcd host IP's and 2379 is listen-client-port
+
+- Run kubeadm using below command
+```
+kubeadm init --config config.yaml
+```
+#### Note:
+Watch the instructions to copy the admin config and a token which minions can use to join the cluster. You can make note of the token command to use later in this documentation.
+
+- Copy the admin config to kubeadmin user home directory
+  - Create kubeadmin user and add to the docker group 
+```
+ useradd -m -s $(which bash) -G sudo kubeadmin
+ sudo usermod -aG docker kubeadmin
+```
+  - Copy admin config to kubeadmin user home directory
+```
+su - kubeadmin
+rm -rf .kube
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+```
+### Now run kubeadm on other master VM's one by one:
+
+-SSH to other master VM change directory to the root user home
+```cd ~```
+- SCP Cert's and config.yaml from master 1 vm
+```
+scp root@10.0.0.51:/root/config.yaml .
+scp root@10.0.0.51:/etc/kubernetes/pki/* /etc/kubernetes/pki 
+rm /etc/kubernetes/pki/apiserver*
+```
+- Now run kubeadm
+``` kubeadm init --config config.yaml ```
+- Repeat ( as mentioned above on) creating kubeadmin user and copy admin config to kubeadmin user home directory other master nodes 	
+- Check all master nodes running kubeadm or not
+```kubectl get nodes
+
+NAME             STATUS     ROLES     AGE       VERSION
+master01         Ready      master    41m       v1.10.4
+master02         Ready      master    16m       v1.10.4
+master03         Ready      master    15m       v1.10.4
+```
+### Run kube-flannel a CNI network add on on all master node one by one from kubeadmin user
+```
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/k8s-manifests/kube-flannel-rbac.yml
+```
+- Check kube-dns pod is up and running
+```
+kubectl get pods --all-namespaces -owide
+```
+### Join worker vm to the cluster by running below command on worker VM's
+- SSH to worker vm and switch to root user then run below command and pass the token and ca cert which was generate while running the kubeadm init command.
+```
+kubeadm join --token <token> <lb01-IP>:6443 --discovery-token-ca-cert-hash sha256:<hash>
+```
+###  Deploy dashboard UI run below command on one of the master vm from kubeadmin user
+```
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
+```
+- Edit kubernetes-dashboard service to change spec type from type: ClusterIP to type: NodePort
+```
+kubectl -n kube-system edit service kubernetes-dashboard
+```
+- Check nodePort on which Dashboard was exposed.
+```
+kubectl -n kube-system get service kubernetes-dashboard
+```
+- Check on which worker node dashboard pod is running (use the actual ip of that worker vm not the ip shown in below command)
+```
+kubectl get pods --all-namespaces -owide
+```
+- Access the dashboard on browser by using below URL 
+```https://<worker-vm-ip>:<nodePort>```
+
+
