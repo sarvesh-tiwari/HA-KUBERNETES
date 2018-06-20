@@ -1,5 +1,5 @@
 # HA-KUBERNETES
-- Create VM for 3 master, 3 Worker, 1 loadbalancer
+## Create VM for 3 master, 3 Worker, 1 loadbalancer
 -- Install Virtual box , Vagrant in local machine.
 
 -- create directories for 3 master, 3 Worker, 1 loadbalancer VM 
