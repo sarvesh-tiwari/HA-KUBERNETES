@@ -1,11 +1,10 @@
 ### Create VM for 3 master, 3 Worker, 1 loadbalancer
 
+- Install Virtual box , Vagrant in local machine.
+- create directories for 3 master, 3 Worker, 1 loadbalancer VM 
+- Place below VagrantFile in all the directories  with different static private ip and VM name 
+
 ```
-Install Virtual box , Vagrant in local machine.
-create directories for 3 master, 3 Worker, 1 loadbalancer VM 
-Place below VagrantFile in all the directories  with different static private ip and VM name 
-
-
 cat <<__EOF__>Vagrantfile 
 Vagrant.configure("2") do |config|
   
@@ -24,8 +23,7 @@ Vagrant.configure("2") do |config|
 end
 __EOF__
 
-
-Go to each directory and start the VM using below command 
-	vagrant up 
-
 ```
+
+- Go to each directory and start the VM using below command 
+	vagrant up 
