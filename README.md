@@ -29,7 +29,7 @@ vagrant up
 ```
 
 - In this example below is the VM configuration. copy this on each host in /etc/hosts file.
-
+```
 10.0.0.51    master01
 10.0.0.52    master02
 10.0.0.53    master03
@@ -38,3 +38,4 @@ vagrant up
 10.0.0.56    worker03
 10.0.0.57    worker04
 10.0.0.58    lb01
+```
