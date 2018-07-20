@@ -382,6 +382,18 @@ kubectl get pods --all-namespaces -owide
 - SSH to worker vm and switch to root user then run below command and pass the token and ca cert which was generate while running the kubeadm init command.
 ```
 kubeadm join --token <token> <lb01-IP>:6443 --discovery-token-ca-cert-hash sha256:<hash>
+
+Or use below command on master node to get the ca cert hash and token
+
+#### get root ca cert fingerprint
+$ openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+e18105ef24bacebb23d694dad491e8ef1c2ea9ade944e784b1f03a15a0d5ecea 
+
+#### Create new token
+sudo kubeadm token create --groups system:bootstrappers:kubeadm:default-node-token
+
+#### get token list
+sudo kubeadm token list
 ```
 ###  Deploy dashboard UI run below command on one of the master vm from kubeadmin user
 ```
