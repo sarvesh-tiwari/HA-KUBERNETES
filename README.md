@@ -75,7 +75,7 @@ touch /etc/etcd.env
 echo "PEER_NAME=${PEER_NAME}" >> /etc/etcd.env
 echo "PRIVATE_IP=${PRIVATE_IP}" >> /etc/etcd.env
 mkdir -p /var/lib/etcd
-ETCD_VERSION="v3.1.12"
+ETCD_VERSION="v3.2.17"
 curl -sSL https://github.com/coreos/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz | tar -xzv --strip-components=1 -C /usr/local/bin/
 ```
 - Install cfssl and cfssljson on all master vm's:
